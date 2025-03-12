@@ -1,0 +1,8 @@
+Flask
+protobuf
+gunicorn
+requests
+flask_cors
+flask_caching
+dateparser
+python-dotenv
