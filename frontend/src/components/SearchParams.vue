@@ -94,7 +94,7 @@ const findRandomRestaurant = async () => {
         error.value = null;
 
         const response = await fetch(
-            `https://random-restaurant-flask-api-273942888807.asia-northeast1.run.app/random-restaurant?radius=${radius.value}&latitude=${latitude.value}&longitude=${longitude.value}&maxPhotos=20&X-API-KEY=${X_API_KEY}&openNow=${isOpen.value}&vegetarian=${isVegetarian.value}`,
+            `https://random-restaurant-flask-api-273942888807.asia-northeast1.run.app/random-restaurant?radius=${radius.value}&latitude=${latitude.value}&longitude=${longitude.value}&maxPhotos=20&X-API-KEY=${X_API_KEY}&isOpen=${isOpen.value}&isVegetarian=${isVegetarian.value}`,
             {
                 method: "GET",
 
