@@ -29,7 +29,7 @@
             </div>
         </div>
 
-        <!-- Carousel pour les photos -->
+        <!-- Photos section -->
         <div v-if="restaurant.photos && restaurant.photos.length" class="card mb-4">
             <div class="card-body">
                 <h3 class="card-title display-5">Photos:</h3>
@@ -84,7 +84,7 @@ onMounted(() => {
     });
 });
 
-// Vérification avant de watcher les photos
+// Create carousel when photos change
 watch(
     () => props.restaurant?.photos,
     (newPhotos) => {

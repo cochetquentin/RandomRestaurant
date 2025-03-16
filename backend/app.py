@@ -55,12 +55,22 @@ def get_photos(photo_urls, use_base64=True):
     """ Gère la récupération des photos avec mise en cache. """
     return fetch_photos_base64(photo_urls) if use_base64 else photo_urls
 
+def filter_restaurants(restaurants, isOpen, isVegetarian):
+    """ Filtre les restaurants en fonction des critères. """
+    return [
+        restaurant for restaurant in restaurants
+        if (not isOpen or restaurant.get('currentOpeningHours', {}).get('openNow', False))
+        and (not isVegetarian or restaurant.get('servesVegetarianFood', False))
+    ]
+
 @app.route('/random-restaurant', methods=['GET'])
 def random_restaurant():
     try:
         lat = request.args.get('latitude', type=float)
         lng = request.args.get('longitude', type=float)
         radius = request.args.get('radius', type=int)
+        isOpen = request.args.get('isOpen', 'false').lower() == 'true'
+        isVegetarian = request.args.get('isVegetarian', 'false').lower() == 'true'
         maxPhotos = request.args.get('maxPhotos', 5, type=int)
         use_base64 = request.args.get('useBase64', 'true').lower() == 'true'
 
@@ -93,11 +103,19 @@ def random_restaurant():
         if not restaurants:
             return jsonify({"error": "No restaurants found"}), 404
 
+        restaurants = filter_restaurants(restaurants, isOpen, isVegetarian)
+        if not restaurants:
+            return jsonify({"error": "No restaurants found matching the criteria"}), 404
+        
         restaurant = random.choice(restaurants)
         place_info = {
             'name': restaurant.get('displayName', {}).get('text', 'Unknown'),
             'address': restaurant.get('formattedAddress', 'Unknown'),
+            'primaryType': restaurant.get('primaryTypeDisplayName', {}).get('text', 'Unknown'),
             'isOpen': restaurant.get('currentOpeningHours', {}).get('openNow', False),
+            'isVegetarian': restaurant.get('servesVegetarianFood', False),
+            'isGoodForWatchingSports': restaurant.get('goodForWatchingSports', False),
+            'isGoodForGroups': restaurant.get('goodForGroups', False),
             'openSchedule': restaurant.get('currentOpeningHours', {}).get('weekdayDescriptions', []),
             'mapLink': restaurant.get('googleMapsUri', ''),
             'phoneNumber': restaurant.get('nationalPhoneNumber', ''),
