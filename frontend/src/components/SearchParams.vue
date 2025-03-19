@@ -76,6 +76,9 @@
 
 <script setup>
 import { ref, defineEmits } from 'vue';
+import { useHistoryStore } from "@/stores/useHistoryStore";
+
+const historyStore = useHistoryStore();
 
 const X_API_KEY = import.meta.env.VITE_X_API_KEY;
 const radius = ref(1000);
@@ -107,6 +110,8 @@ const findRandomRestaurant = async () => {
         }
 
         const data = await response.json();
+        historyStore.addRestaurant(data);
+
         emit("updateResults", data);
     } catch (err) {
         console.error("Erreur API :", err);
