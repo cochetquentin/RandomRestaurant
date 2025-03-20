@@ -81,6 +81,7 @@ import { useHistoryStore } from "@/stores/useHistoryStore";
 const historyStore = useHistoryStore();
 
 const X_API_KEY = import.meta.env.VITE_X_API_KEY;
+const API_URL = import.meta.env.VITE_API_URL;
 const radius = ref(1000);
 const latitude = ref(null);
 const longitude = ref(null);
@@ -96,13 +97,22 @@ const findRandomRestaurant = async () => {
         isLoading.value = true;
         error.value = null;
 
-        const response = await fetch(
-            `https://random-restaurant-flask-api-273942888807.asia-northeast1.run.app/random-restaurant?radius=${radius.value}&latitude=${latitude.value}&longitude=${longitude.value}&maxPhotos=20&X-API-KEY=${X_API_KEY}&isOpen=${isOpen.value}&isVegetarian=${isVegetarian.value}`,
-            {
-                method: "GET",
-
-            }
-        );
+        const response = await fetch(API_URL + "/random-restaurant", {
+            method: "POST",
+            headers: {
+                'Content-Type': 'application/json',
+                'X-API-KEY': X_API_KEY,
+            },
+            body: JSON.stringify({
+                'radius': radius.value,
+                'latitude': latitude.value,
+                'longitude': longitude.value,
+                'maxPhotos': 10,
+                'isOpen': isOpen.value,
+                'isVegetarian': isVegetarian.value,
+                'restaurantsHistory': historyStore.restaurants.map(restaurant => restaurant.placeInfos.address),
+            }),
+        });
 
         if (!response.ok) {
             const errorData = await response.json(); // Essaie de récupérer le message d'erreur de l'API

@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-from flask_cors import CORS
+from flask_cors import CORS, cross_origin
 from flask_caching import Cache
 import requests
 import random
@@ -14,17 +14,20 @@ GOOGLE_PLACES_API_KEY = os.getenv('GOOGLE_PLACES_API_KEY')
 X_API_KEY = os.getenv('X_API_KEY')
 
 app = Flask(__name__)
-CORS(app)  # Permet toutes les origines
-app.config['CACHE_TYPE'] = 'simple'  # Active un cache en mémoire
+CORS(app)
+app.config['CACHE_TYPE'] = 'simple'
 cache = Cache(app)
 cache.init_app(app)
 
 @app.before_request
 def check_api_key():
-    key = request.args.get("X-API-KEY")
+    if request.method == "OPTIONS":
+        return  # Let flask handle OPTIONS requests
+
+    key = request.headers.get("X-API-KEY")
     if key != X_API_KEY:
         return jsonify({"error": "Unauthorized"}), 401
-
+    
 @app.route('/')
 def index():
     return 'API Online !'
@@ -55,24 +58,28 @@ def get_photos(photo_urls, use_base64=True):
     """ Gère la récupération des photos avec mise en cache. """
     return fetch_photos_base64(photo_urls) if use_base64 else photo_urls
 
-def filter_restaurants(restaurants, isOpen, isVegetarian):
+def filter_restaurants(restaurants, isOpen, isVegetarian, restaurantsHistory):
     """ Filtre les restaurants en fonction des critères. """
     return [
         restaurant for restaurant in restaurants
         if (not isOpen or restaurant.get('currentOpeningHours', {}).get('openNow', False))
         and (not isVegetarian or restaurant.get('servesVegetarianFood', False))
+        and restaurant.get('formattedAddress', 'Unknown') not in restaurantsHistory
     ]
 
-@app.route('/random-restaurant', methods=['GET'])
+@app.route('/random-restaurant', methods=['POST'])
 def random_restaurant():
+    print("Request received")
     try:
-        lat = request.args.get('latitude', type=float)
-        lng = request.args.get('longitude', type=float)
-        radius = request.args.get('radius', type=int)
-        isOpen = request.args.get('isOpen', 'false').lower() == 'true'
-        isVegetarian = request.args.get('isVegetarian', 'false').lower() == 'true'
-        maxPhotos = request.args.get('maxPhotos', 5, type=int)
-        use_base64 = request.args.get('useBase64', 'true').lower() == 'true'
+        data = request.get_json()
+        lat = float(data.get('latitude', None))
+        lng = float(data.get('longitude', None))
+        radius = float(data.get('radius', None))
+        isOpen = data.get('isOpen', False)
+        isVegetarian = data.get('isVegetarian', False)
+        maxPhotos = data.get('maxPhotos', 5)
+        use_base64 = data.get('useBase64', True)
+        restauransHistory = data.get('restaurantsHistory', [])
 
         if not lat or not lng or not radius:
             return jsonify({"error": "Missing or invalid parameters"}), 400
@@ -103,7 +110,7 @@ def random_restaurant():
         if not restaurants:
             return jsonify({"error": "No restaurants found"}), 404
 
-        restaurants = filter_restaurants(restaurants, isOpen, isVegetarian)
+        restaurants = filter_restaurants(restaurants, isOpen, isVegetarian, restauransHistory)
         if not restaurants:
             return jsonify({"error": "No restaurants found matching the criteria"}), 404
         
@@ -144,7 +151,8 @@ def random_restaurant():
 
     except Exception as e:
         app.logger.error(f"Unexpected error: {str(e)}")
+        print(e)
         return jsonify({"error": "An unexpected error occurred"}), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=5000, debug=True)
