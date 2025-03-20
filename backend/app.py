@@ -69,7 +69,6 @@ def filter_restaurants(restaurants, isOpen, isVegetarian, restaurantsHistory):
 
 @app.route('/random-restaurant', methods=['POST'])
 def random_restaurant():
-    print("Request received")
     try:
         data = request.get_json()
         lat = float(data.get('latitude', None))
@@ -89,7 +88,7 @@ def random_restaurant():
         headers = {
             'Content-Type': 'application/json',
             'X-Goog-Api-Key': GOOGLE_PLACES_API_KEY,
-            'X-Goog-FieldMask': 'places.displayName,places.formattedAddress,places.currentOpeningHours,places.googleMapsUri,places.nationalPhoneNumber,places.rating,places.userRatingCount,places.reviews,places.photos'
+            'X-Goog-FieldMask': 'places.displayName,places.types,places.formattedAddress,places.currentOpeningHours,places.googleMapsUri,places.nationalPhoneNumber,places.rating,places.userRatingCount,places.reviews,places.photos'
         }
         json_data = {
             'includedTypes': ['restaurant'],
@@ -118,7 +117,7 @@ def random_restaurant():
         place_info = {
             'name': restaurant.get('displayName', {}).get('text', 'Unknown'),
             'address': restaurant.get('formattedAddress', 'Unknown'),
-            'primaryType': restaurant.get('primaryTypeDisplayName', {}).get('text', 'Unknown'),
+            'primaryType': ', '.join(restaurant.get('types', ['Unknow'])[:3]).replace('_', ' ').title(),
             'isOpen': restaurant.get('currentOpeningHours', {}).get('openNow', False),
             'isVegetarian': restaurant.get('servesVegetarianFood', False),
             'isGoodForWatchingSports': restaurant.get('goodForWatchingSports', False),
